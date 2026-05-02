@@ -1,0 +1,41 @@
+{
+  "overall_result": "PASS",
+  "total_score": 29,
+  "max_score": 30,
+  "category_scores": {
+    "YouTube title clarity": 5,
+    "Thumbnail / title promise alignment": 5,
+    "Viewer payoff": 5,
+    "Script structure": 5,
+    "Factual-claim risk": 4,
+    "Resolve terminology accuracy": 5
+  },
+  "findings": [
+    {
+      "id": "factual.risky_claim",
+      "severity": "warning",
+      "category": "Factual-claim risk",
+      "message": "Risky factual claims detected; source notes are present.",
+      "suggestion": "Confirm the source notes are current before publishing."
+    }
+  ],
+  "warnings": [
+    "Risky factual claims detected; source notes are present."
+  ],
+  "risky_claims": [
+    "Resolve version and color-management behavior should be checked manually before publishing."
+  ],
+  "suspicious_terms": [],
+  "top_fixes": [
+    "Review warning in Factual-claim risk."
+  ],
+  "input_sections_detected": [
+    "hook",
+    "notes",
+    "script",
+    "thumbnail",
+    "title"
+  ],
+  "created_at": "2026-05-02T00:00:00Z",
+  "package_title": "Fix Flat DaVinci Resolve Exports with Color Management"
+}

@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 from .parser import parse_markdown
-from .report import render_markdown, render_terminal
+from .report import render_hermes_report, render_linear_report, render_markdown, render_terminal
 from .rules import run_checks
 
 
@@ -20,6 +20,8 @@ def build_parser() -> argparse.ArgumentParser:
     check.add_argument("input", help="Path to INPUT.md")
     check.add_argument("--json", action="store_true", help="Print JSON output.")
     check.add_argument("--report", help="Write a Markdown report to this path.")
+    check.add_argument("--hermes-report", action="store_true", help="Print a compact Markdown report for Hermes memory.")
+    check.add_argument("--linear-report", action="store_true", help="Print a Markdown issue/comment body for Linear.")
     return parser
 
 
@@ -32,6 +34,10 @@ def run_check(args: argparse.Namespace) -> int:
 
     if args.json:
         print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
+    elif args.hermes_report:
+        print(render_hermes_report(result), end="")
+    elif args.linear_report:
+        print(render_linear_report(result), end="")
     else:
         print(render_terminal(result))
 

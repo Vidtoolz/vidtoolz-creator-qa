@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 
-from .models import CheckResult, GateResult, Package
+from .models import CheckResult, Finding, GateResult, Package
 
 DATA_PATH = Path(__file__).resolve().parents[2] / "data" / "resolve_terms.json"
 
@@ -97,92 +98,148 @@ def score_from_issues(issue_count: int, max_score: int = 5) -> int:
     return max(0, max_score - issue_count)
 
 
+def finding(rule_id: str, severity: str, category: str, message: str, suggestion: str) -> Finding:
+    return Finding(rule_id, severity, category, message, suggestion)
+
+
 def check_title(package: Package) -> CheckResult:
+    category = "YouTube title clarity"
     title = package.get("title")
     failed: list[str] = []
     warnings: list[str] = []
+    findings: list[Finding] = []
     title_words = words(title)
 
     if not title:
-        failed.append("Title section is missing.")
+        message = "Title section is missing."
+        failed.append(message)
+        findings.append(finding("title.missing", "fail", category, message, "Add a # Title section with topic and viewer benefit."))
     if len(title) > 70:
-        failed.append("Title is too long for clear YouTube packaging.")
+        message = "Title is too long for clear YouTube packaging."
+        failed.append(message)
+        findings.append(finding("title.too_long", "fail", category, message, "Shorten the title to roughly 70 characters or fewer."))
     if len(title_words) < 4:
-        failed.append("Title is too short to clearly identify topic and benefit.")
+        message = "Title is too short to clearly identify topic and benefit."
+        failed.append(message)
+        findings.append(finding("title.too_short", "fail", category, message, "Name the topic and the viewer outcome in the title."))
     if any(phrase in title.lower() for phrase in VAGUE_PHRASES):
-        failed.append("Title uses vague packaging language.")
+        message = "Title uses vague packaging language."
+        failed.append(message)
+        findings.append(finding("title.vague", "fail", category, message, "Replace vague hype with the concrete problem or result."))
     if title_words and len(set(title_words) - GENERIC_TITLE_WORDS) < 3:
-        failed.append("Title sounds generic and does not clearly identify the topic.")
+        message = "Title sounds generic and does not clearly identify the topic."
+        failed.append(message)
+        findings.append(finding("title.generic", "fail", category, message, "Add specific product, workflow, or problem terms."))
     if not any(word in BENEFIT_WORDS for word in title_words):
-        failed.append("Title does not state a clear viewer benefit.")
+        message = "Title does not state a clear viewer benefit."
+        failed.append(message)
+        findings.append(finding("title.no_viewer_benefit", "fail", category, message, "State what the viewer can fix, make, avoid, save, or improve."))
     if "resolve" not in title.lower() and "davinci" not in title.lower():
-        warnings.append("Title may not identify the Resolve/video editing topic clearly.")
+        message = "Title may not identify the Resolve/video editing topic clearly."
+        warnings.append(message)
+        findings.append(finding("title.topic_unclear", "warning", category, message, "Include Resolve, DaVinci Resolve, or a clear editing topic when relevant."))
 
-    return CheckResult("YouTube title clarity", score_from_issues(len(failed)), failed, warnings)
+    return CheckResult(category, score_from_issues(len(failed)), failed, warnings, findings=findings)
 
 
 def check_thumbnail_alignment(package: Package) -> CheckResult:
+    category = "Thumbnail / title promise alignment"
     title = package.get("title")
     thumbnail = package.get("thumbnail")
     failed: list[str] = []
     warnings: list[str] = []
+    findings: list[Finding] = []
     title_words = set(words(title)) - GENERIC_TITLE_WORDS
     thumb_words = set(words(thumbnail)) - GENERIC_TITLE_WORDS
     overlap = title_words & thumb_words
 
     if not thumbnail:
-        failed.append("Thumbnail section is missing.")
+        message = "Thumbnail section is missing."
+        failed.append(message)
+        findings.append(finding("thumbnail.missing", "fail", category, message, "Add a # Thumbnail section with short visual promise text."))
     if len(words(thumbnail)) > 8:
-        failed.append("Thumbnail text is too long.")
+        message = "Thumbnail text is too long."
+        failed.append(message)
+        findings.append(finding("thumbnail.too_much_text", "fail", category, message, "Cut thumbnail text to a short phrase, ideally under 8 words."))
     if title_words and thumb_words and not overlap:
-        failed.append("Title and thumbnail text do not share a clear promise.")
+        message = "Title and thumbnail text do not share a clear promise."
+        failed.append(message)
+        findings.append(finding("thumbnail.promise_mismatch", "fail", category, message, "Make the thumbnail reinforce the same promise as the title."))
     if not any(word in thumb_words for word in BENEFIT_WORDS | {"before", "after", "timeline", "nodes", "export", "grade"}):
-        failed.append("Thumbnail has no concrete visual promise.")
+        message = "Thumbnail has no concrete visual promise."
+        failed.append(message)
+        findings.append(finding("thumbnail.no_visual_promise", "fail", category, message, "Use concrete result language such as fix, export, timeline, nodes, grade, before, or after."))
     if len(thumb_words) <= 1:
-        warnings.append("Thumbnail text may be too thin to carry a promise.")
+        message = "Thumbnail text may be too thin to carry a promise."
+        warnings.append(message)
+        findings.append(finding("thumbnail.too_thin", "warning", category, message, "Use enough thumbnail wording to imply the specific result."))
 
     return CheckResult(
-        "Thumbnail / title promise alignment",
+        category,
         score_from_issues(len(failed)),
         failed,
         warnings,
         {"shared_terms": sorted(overlap)},
+        findings,
     )
 
 
 def check_viewer_payoff(package: Package) -> CheckResult:
+    category = "Viewer payoff"
     combined = "\n".join([package.get("title"), package.get("thumbnail"), package.get("hook"), package.get("script")])
     lower = combined.lower()
     failed: list[str] = []
     warnings: list[str] = []
+    findings: list[Finding] = []
 
     has_payoff = any(re.search(pattern, lower, re.MULTILINE) for pattern in VIEWER_PAYOFF_PATTERNS)
     if not has_payoff:
-        failed.append("Viewer payoff is missing or unclear.")
+        message = "Viewer payoff is missing or unclear."
+        failed.append(message)
+        findings.append(finding("payoff.missing", "fail", category, message, "State what the viewer will get, fix, understand, or finish by the end."))
     if any(phrase in lower for phrase in CREATOR_CENTERED) and not has_payoff:
-        failed.append("Payoff is creator-centered instead of viewer-centered.")
+        message = "Payoff is creator-centered instead of viewer-centered."
+        failed.append(message)
+        findings.append(finding("payoff.weak", "fail", category, message, "Rewrite creator-centered language into a viewer-centered outcome."))
     elif any(phrase in lower for phrase in CREATOR_CENTERED):
-        warnings.append("Some payoff language is creator-centered; keep the result viewer-centered.")
+        message = "Some payoff language is creator-centered; keep the result viewer-centered."
+        warnings.append(message)
+        findings.append(finding("payoff.weak", "warning", category, message, "Keep the promise focused on the viewer's result."))
 
-    return CheckResult("Viewer payoff", score_from_issues(len(failed) * 2), failed, warnings)
+    return CheckResult(category, score_from_issues(len(failed) * 2), failed, warnings, findings=findings)
 
 
 def check_script_structure(package: Package) -> CheckResult:
+    category = "Script structure"
     script = "\n".join([package.get("hook"), package.get("script")]).lower()
     failed: list[str] = []
+    findings: list[Finding] = []
     present: list[str] = []
 
     if not script.strip():
-        failed.append("Hook and Script sections are missing.")
+        message = "Hook and Script sections are missing."
+        failed.append(message)
+        findings.append(finding("script.missing", "fail", category, message, "Add # Hook and # Script sections before running QA."))
     for part, patterns in STRUCTURE_PATTERNS.items():
         if any(re.search(pattern, script, re.MULTILINE | re.DOTALL) for pattern in patterns):
             present.append(part)
         else:
-            failed.append(f"Missing script structure part: {part}.")
+            message = f"Missing script structure part: {part}."
+            failed.append(message)
+            rule_id = {
+                "hook": "script.no_hook",
+                "problem/context": "script.no_context",
+                "promised outcome": "script.no_promised_outcome",
+                "steps or sections": "script.no_steps",
+                "demonstration/proof": "script.no_demo_or_proof",
+                "recap or takeaway": "script.no_recap",
+                "call to action": "script.no_cta",
+            }[part]
+            findings.append(finding(rule_id, "fail", category, message, f"Add a clear {part} beat to the script."))
 
     missing_count = len(STRUCTURE_PATTERNS) - len(present)
     score = 0 if not script.strip() else max(0, 5 - missing_count)
-    return CheckResult("Script structure", score, failed, [], {"present": present})
+    return CheckResult(category, score, failed, [], {"present": present}, findings)
 
 
 def has_source_notes(package: Package) -> bool:
@@ -204,21 +261,28 @@ def find_risky_claims(text: str) -> list[str]:
 
 
 def check_factual_risk(package: Package) -> CheckResult:
+    category = "Factual-claim risk"
     claims = find_risky_claims(package.combined_text)
     sourced = has_source_notes(package)
     failed: list[str] = []
     warnings: list[str] = []
+    findings: list[Finding] = []
     if claims and not sourced:
-        failed.append("Risky factual claims need source notes or manual verification.")
+        message = "Risky factual claims need source notes or manual verification."
+        failed.append(message)
+        findings.append(finding("factual.risky_claim", "fail", category, message, "Add source notes or manual verification for version, price, compatibility, performance, or absolute claims."))
     elif claims:
-        warnings.append("Risky factual claims detected; source notes are present.")
+        message = "Risky factual claims detected; source notes are present."
+        warnings.append(message)
+        findings.append(finding("factual.risky_claim", "warning", category, message, "Confirm the source notes are current before publishing."))
     risk_score = max(0, 5 - min(5, len(claims)))
     return CheckResult(
-        "Factual-claim risk",
+        category,
         risk_score,
         failed,
         warnings,
         {"needs_source_manual_verification": claims},
+        findings,
     )
 
 
@@ -227,6 +291,7 @@ def load_resolve_lexicon(path: Path = DATA_PATH) -> dict[str, object]:
 
 
 def check_resolve_terms(package: Package) -> CheckResult:
+    category = "Resolve terminology accuracy"
     lexicon = load_resolve_lexicon()
     suspicious_map: dict[str, str] = lexicon.get("suspicious_terms", {})  # type: ignore[assignment]
     text = package.combined_text.lower()
@@ -236,8 +301,18 @@ def check_resolve_terms(package: Package) -> CheckResult:
             suspicious.append(f"{bad_term} -> {suggestion}")
 
     failed = [f"Suspicious Resolve term: {item}" for item in suspicious]
+    findings = [
+        finding(
+            "resolve.suspicious_term",
+            "fail",
+            category,
+            f"Suspicious Resolve term: {item}",
+            "Replace the suspicious wording with the suggested Resolve terminology.",
+        )
+        for item in suspicious
+    ]
     score = score_from_issues(len(failed))
-    return CheckResult("Resolve terminology accuracy", score, failed, [], {"suspicious_terms": suspicious})
+    return CheckResult(category, score, failed, [], {"suspicious_terms": suspicious}, findings)
 
 
 def top_fixes(checks: list[CheckResult]) -> list[str]:
@@ -292,6 +367,9 @@ def run_checks(package: Package) -> GateResult:
         status = "PASS"
 
     return GateResult(
+        package_title=package.get("title") or "(untitled package)",
+        input_sections_detected=sorted(package.sections),
+        created_at=datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
         status=status,
         total_score=total_score,
         max_score=max_score,

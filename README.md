@@ -2,7 +2,7 @@
 
 Vidtoolz Creator QA is a local Python CLI for checking VIDTOOLZ YouTube packaging and scripts before publishing.
 
-v0.1 answers one question:
+v0.2 answers one question:
 
 > Run packaging gate on this title/thumbnail/script and tell me what fails.
 
@@ -15,6 +15,8 @@ It parses a Markdown package with sections like `# Title`, `# Thumbnail`, `# Hoo
 - Prints a readable terminal summary.
 - Can emit JSON for automation.
 - Can write a Markdown report.
+- Can print compact Hermes and Linear Markdown reports.
+- Emits stable rule IDs for machine-readable findings.
 - Flags risky claims that need source notes or manual verification.
 - Flags suspicious Resolve terms using an editable local lexicon in `data/resolve_terms.json`.
 
@@ -47,12 +49,38 @@ PYTHONPATH=src python -m creator_qa.cli check examples/resolve-tutorial-sample.m
 creator-qa check INPUT.md
 creator-qa check INPUT.md --json
 creator-qa check INPUT.md --report report.md
+creator-qa check INPUT.md --hermes-report
+creator-qa check INPUT.md --linear-report
 ```
 
-Example:
+Normal terminal check:
 
 ```bash
 creator-qa check examples/resolve-tutorial-sample.md
+```
+
+JSON output:
+
+```bash
+creator-qa check examples/resolve-tutorial-sample.md --json
+```
+
+Markdown report output:
+
+```bash
+creator-qa check examples/resolve-tutorial-sample.md --report report.md
+```
+
+Hermes memory report output:
+
+```bash
+creator-qa check examples/resolve-tutorial-sample.md --hermes-report
+```
+
+Linear issue/comment output:
+
+```bash
+creator-qa check examples/resolve-tutorial-sample.md --linear-report
 ```
 
 ## Sample Report
@@ -81,6 +109,8 @@ Top 3 fixes:
 ```
 
 Exact scores may change as local rules are edited.
+
+Example outputs are available in `examples/reports/`.
 
 ## Markdown Input Format
 
@@ -118,6 +148,32 @@ Run:
 
 The script runs Python syntax checks, unit tests, and CLI smoke tests against the example package.
 
-## Future Hermes Tool / Skill Path
+## Machine-Readable Output
+
+`--json` includes:
+
+- `overall_result`
+- `total_score`
+- `max_score`
+- `category_scores`
+- `findings`
+- `warnings`
+- `risky_claims`
+- `suspicious_terms`
+- `top_fixes`
+- `input_sections_detected`
+- `created_at`
+
+Each finding includes `id`, `severity`, `category`, `message`, and `suggestion`. Treat finding IDs as stable automation keys.
+
+## Hermes Tool / Skill Path
 
 This can become a Hermes tool or skill by keeping the deterministic checker as the core execution layer and wrapping it with a Hermes-facing interface that passes Markdown input and reads JSON output. The current `--json` output is intended to be stable enough for a future wrapper to consume, while Markdown reports remain readable for humans.
+
+Use `--hermes-report` when the result should be pasted into Hermes memory.
+
+## Episode Factory Integration
+
+Vidtoolz Episode Factory can later export Markdown packages into Creator QA, run `creator-qa check episode.md --json`, and store the result as QA evidence. For task tracking, it can route `--linear-report` into Linear. For memory, it can route `--hermes-report` into Hermes.
+
+See `docs/episode-factory-integration.md` for the intended integration path.

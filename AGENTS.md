@@ -4,7 +4,7 @@
 
 This repository contains Vidtoolz Creator QA, a local Python CLI verifier for VIDTOOLZ YouTube packaging and scripts.
 
-The v0.1 goal is to answer:
+The v0.2 goal is to answer:
 
 > Run packaging gate on this title/thumbnail/script and tell me what fails.
 
@@ -19,6 +19,8 @@ The v0.1 goal is to answer:
 - Prefer Python standard library unless a dependency is clearly necessary.
 - Keep rules deterministic and easy to inspect.
 - Keep output readable by Hermes and humans.
+- Keep rule IDs stable once introduced.
+- Do not remove JSON fields without documenting a migration path.
 
 ## Verification
 

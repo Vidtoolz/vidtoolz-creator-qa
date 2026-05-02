@@ -63,6 +63,61 @@ Comment with your format.
         self.assertTrue(result.failed)
         self.assertIn("render page", result.details["suspicious_terms"][0])
 
+    def test_gate_json_shape_includes_v02_fields(self) -> None:
+        package = Package(
+            path="sample.md",
+            sections={
+                "title": "Best Tips",
+                "thumbnail": "Best Export Settings For Fast Renders In Resolve Timeline",
+                "script": "This is always the fastest workflow in the render page.",
+            },
+        )
+
+        output = run_checks(package).to_dict()
+
+        for key in [
+            "overall_result",
+            "total_score",
+            "max_score",
+            "category_scores",
+            "findings",
+            "warnings",
+            "risky_claims",
+            "suspicious_terms",
+            "top_fixes",
+            "input_sections_detected",
+            "created_at",
+        ]:
+            self.assertIn(key, output)
+        self.assertTrue(output["findings"])
+        self.assertIn("id", output["findings"][0])
+        self.assertIn("severity", output["findings"][0])
+        self.assertIn("category", output["findings"][0])
+        self.assertIn("message", output["findings"][0])
+        self.assertIn("suggestion", output["findings"][0])
+
+    def test_stable_rule_ids_are_emitted(self) -> None:
+        package = Package(
+            path="sample.md",
+            sections={
+                "title": "Best Tips",
+                "thumbnail": "Best Export Settings For Fast Renders In Resolve Timeline",
+                "script": "This is always the fastest workflow in the render page.",
+            },
+        )
+
+        result = run_checks(package)
+        ids = {finding.id for check in result.checks for finding in check.findings}
+
+        self.assertIn("title.no_viewer_benefit", ids)
+        self.assertIn("thumbnail.too_much_text", ids)
+        self.assertIn("payoff.missing", ids)
+        self.assertIn("script.no_hook", ids)
+        self.assertIn("script.no_steps", ids)
+        self.assertIn("script.no_demo_or_proof", ids)
+        self.assertIn("factual.risky_claim", ids)
+        self.assertIn("resolve.suspicious_term", ids)
+
 
 if __name__ == "__main__":
     unittest.main()
