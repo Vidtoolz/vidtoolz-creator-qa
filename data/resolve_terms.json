@@ -1,0 +1,34 @@
+{
+  "canonical_terms": [
+    "Media page",
+    "Cut page",
+    "Edit page",
+    "Fusion page",
+    "Color page",
+    "Fairlight page",
+    "Deliver page",
+    "Inspector",
+    "Timeline",
+    "Project Settings",
+    "Color Management",
+    "Render Queue",
+    "Optimized Media",
+    "Proxy Media",
+    "Render Cache",
+    "Compound Clip",
+    "Fusion Composition",
+    "Power Window",
+    "Node",
+    "CST",
+    "Color Space Transform",
+    "Effects Library"
+  ],
+  "suspicious_terms": {
+    "render page": "Use Deliver page when referring to Resolve's export page.",
+    "sound page": "Use Fairlight page for audio work.",
+    "effects page": "Use Fusion page for compositing or Effects Library for effects browsing.",
+    "export page": "Use Deliver page when referring to Resolve's export page.",
+    "color tab": "Use Color page.",
+    "audio page": "Use Fairlight page."
+  }
+}

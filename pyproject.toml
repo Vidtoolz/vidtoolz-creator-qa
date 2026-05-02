@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "creator-qa"
+version = "0.1.0"
+description = "Local verifier for VIDTOOLZ YouTube packaging and scripts."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "VIDTOOLZ" }]
+license = { text = "Private" }
+dependencies = []
+
+[project.scripts]
+creator-qa = "creator_qa.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+creator_qa = []

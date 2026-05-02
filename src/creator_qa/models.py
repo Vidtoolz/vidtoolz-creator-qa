@@ -1,0 +1,74 @@
+"""Data models for Creator QA."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any
+
+
+@dataclass(frozen=True)
+class Package:
+    """Parsed Markdown creator package."""
+
+    path: str
+    sections: dict[str, str]
+
+    def get(self, name: str) -> str:
+        return self.sections.get(name.lower(), "").strip()
+
+    @property
+    def combined_text(self) -> str:
+        return "\n\n".join(value for value in self.sections.values() if value.strip())
+
+
+@dataclass
+class CheckResult:
+    """Result for a single check category."""
+
+    name: str
+    score: int
+    failed: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    details: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def passed(self) -> bool:
+        return not self.failed
+
+
+@dataclass
+class GateResult:
+    """Overall packaging gate result."""
+
+    status: str
+    total_score: int
+    max_score: int
+    checks: list[CheckResult]
+    failed_checks: list[str]
+    warnings: list[str]
+    risky_claims: list[str]
+    suspicious_terms: list[str]
+    top_fixes: list[str]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "overall_result": self.status,
+            "total_score": self.total_score,
+            "max_score": self.max_score,
+            "category_scores": {check.name: check.score for check in self.checks},
+            "failed_checks": self.failed_checks,
+            "warnings": self.warnings,
+            "risky_factual_claims": self.risky_claims,
+            "suspicious_resolve_terms": self.suspicious_terms,
+            "top_3_recommended_fixes": self.top_fixes,
+            "checks": [
+                {
+                    "name": check.name,
+                    "score": check.score,
+                    "failed": check.failed,
+                    "warnings": check.warnings,
+                    "details": check.details,
+                }
+                for check in self.checks
+            ],
+        }
