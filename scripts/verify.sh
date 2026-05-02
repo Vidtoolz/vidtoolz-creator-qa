@@ -7,3 +7,9 @@ PYTHONPATH=src python -m creator_qa.cli check examples/resolve-tutorial-sample.m
 PYTHONPATH=src python -m creator_qa.cli check examples/resolve-tutorial-sample.md --json >/tmp/creator-qa-smoke.json
 PYTHONPATH=src python -m creator_qa.cli check examples/resolve-tutorial-sample.md --hermes-report >/tmp/creator-qa-smoke-hermes.md
 PYTHONPATH=src python -m creator_qa.cli check examples/resolve-tutorial-sample.md --linear-report >/tmp/creator-qa-smoke-linear.md
+./scripts/hermes-creator-qa.sh examples/resolve-tutorial-sample.md >/tmp/creator-qa-hermes-wrapper-pass.md
+if ./scripts/hermes-creator-qa.sh examples/failures/bad-title-sample.md --profile resolve_tutorial >/tmp/creator-qa-hermes-wrapper-fail.md; then
+  echo "Expected bad-title failure fixture to return non-zero." >&2
+  exit 1
+fi
+grep -q "Overall result: FAIL" /tmp/creator-qa-hermes-wrapper-fail.md

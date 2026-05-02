@@ -2,7 +2,7 @@
 
 Vidtoolz Creator QA is a local Python CLI for checking VIDTOOLZ YouTube packaging and scripts before publishing.
 
-v0.3 answers one question:
+v0.4 answers one question:
 
 > Run packaging gate on this title/thumbnail/script and tell me what fails.
 
@@ -21,6 +21,7 @@ It parses a Markdown package with sections like `# Title`, `# Thumbnail`, `# Hoo
 - Flags suspicious Resolve terms using an editable local lexicon in `data/resolve_terms.json`.
 - Supports QA profiles for Resolve tutorials, Shorts, AI video breakdowns, Kit newsletters, and product affiliate pages.
 - Includes intentionally weak fixtures to prove failure paths.
+- Provides a local Hermes/Codex adapter wrapper for reusable QA checks.
 
 ## What It Does Not Do
 
@@ -90,6 +91,30 @@ Linear issue/comment output:
 
 ```bash
 creator-qa check examples/resolve-tutorial-sample.md --linear-report
+```
+
+## Hermes / Codex Adapter Usage
+
+The Hermes adapter is a local wrapper around the same deterministic CLI. It activates `.venv` when available, defaults to `--hermes-report`, defaults to `--profile resolve_tutorial`, and does not modify the checked file.
+
+```bash
+./scripts/hermes-creator-qa.sh examples/resolve-tutorial-sample.md
+./scripts/hermes-creator-qa.sh examples/failures/bad-title-sample.md --profile resolve_tutorial
+./scripts/hermes-creator-qa.sh examples/failures/thumbnail-mismatch-sample.md --json
+```
+
+Adapter files:
+
+- `scripts/hermes-creator-qa.sh`: stable local wrapper command.
+- `hermes/creator-qa-tool.json`: machine-readable adapter manifest.
+- `hermes/creator-qa-hermes-instructions.md`: prompt snippet for Hermes behavior.
+- `docs/hermes-integration.md`: integration notes for Hermes, Codex, and Episode Factory.
+- `templates/creator-qa-package.md`: standard package shape for Hermes or Episode Factory to fill.
+
+Codex should run the wrapper before publishing-related commits when a change affects creator packaging or adapter behavior:
+
+```bash
+./scripts/hermes-creator-qa.sh path/to/package.md
 ```
 
 ## Sample Report
@@ -212,9 +237,9 @@ Each finding includes `id`, `severity`, `category`, `message`, and `suggestion`.
 
 ## Hermes Tool / Skill Path
 
-This can become a Hermes tool or skill by keeping the deterministic checker as the core execution layer and wrapping it with a Hermes-facing interface that passes Markdown input and reads JSON output. The current `--json` output is intended to be stable enough for a future wrapper to consume, while Markdown reports remain readable for humans.
+This can become a Hermes tool or skill by keeping the deterministic checker as the core execution layer and using `scripts/hermes-creator-qa.sh` as the Hermes-facing interface. The current `--json` output is intended to be stable enough for a future wrapper to consume, while Markdown reports remain readable for humans.
 
-Use `--hermes-report` when the result should be pasted into Hermes memory.
+Use `./scripts/hermes-creator-qa.sh INPUT.md` when the result should be pasted into Hermes memory.
 
 ## Episode Factory Integration
 

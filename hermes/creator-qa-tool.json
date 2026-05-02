@@ -1,0 +1,64 @@
+{
+  "name": "creator_qa",
+  "display_name": "Vidtoolz Creator QA",
+  "purpose": "Run a deterministic local publishing gate on a Markdown creator package and report packaging, script, factual-risk, and Resolve terminology issues.",
+  "command_path": "./scripts/hermes-creator-qa.sh",
+  "input": {
+    "type": "markdown_file",
+    "schema": "Creator QA package with top-level sections such as Title, Thumbnail, Hook, Script, Notes, Viewer Payoff, Factual Claims Needing Source, and Resolve Terminology Used.",
+    "mutates_input": false
+  },
+  "output_modes": [
+    {
+      "flag": "--hermes-report",
+      "description": "Default compact Markdown report for Hermes memory and user summaries."
+    },
+    {
+      "flag": "--json",
+      "description": "Stable machine-readable gate result for automation."
+    },
+    {
+      "flag": "--linear-report",
+      "description": "Markdown issue/comment body for task tracking."
+    },
+    {
+      "flag": "--report PATH",
+      "description": "Write a full Markdown report to PATH."
+    }
+  ],
+  "profiles": [
+    "resolve_tutorial",
+    "shorts",
+    "ai_video_breakdown",
+    "kit_newsletter",
+    "product_affiliate_page"
+  ],
+  "default_profile": "resolve_tutorial",
+  "safety_model": {
+    "local_only": true,
+    "no_web_calls": true,
+    "no_llm_calls": true,
+    "no_external_api_calls": true,
+    "no_database": true,
+    "input_file_modified": false,
+    "factual_claims": "The tool flags risky claims that need source notes or manual verification; it does not verify truth."
+  },
+  "examples": [
+    "./scripts/hermes-creator-qa.sh examples/resolve-tutorial-sample.md",
+    "./scripts/hermes-creator-qa.sh examples/failures/bad-title-sample.md --profile resolve_tutorial",
+    "./scripts/hermes-creator-qa.sh examples/failures/thumbnail-mismatch-sample.md --json"
+  ],
+  "recommended_hermes_usage": [
+    "Run before publishing or approving a YouTube package, Resolve tutorial, script outline, or creator workflow handoff.",
+    "Treat FAIL as a publishing blocker.",
+    "Summarize the top three fixes to the user.",
+    "Ask the user to rerun Creator QA after edits.",
+    "Do not soften or override the gate result with vague encouragement."
+  ],
+  "guarantees": [
+    "No web calls.",
+    "No LLM calls.",
+    "No external API calls.",
+    "No mutation of the checked input file."
+  ]
+}

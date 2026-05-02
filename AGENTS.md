@@ -4,11 +4,12 @@
 
 This repository contains Vidtoolz Creator QA, a local Python CLI verifier for VIDTOOLZ YouTube packaging and scripts.
 
-The v0.3 goal is to answer:
+The v0.4 goal is to answer:
 
 > Run packaging gate on this title/thumbnail/script and tell me what fails.
 
 v0.3 must prove weak packages are caught, not only that good packages pass.
+v0.4 adds a local Hermes/Codex adapter layer without modifying Hermes internals.
 
 ## Constraints
 
@@ -26,6 +27,9 @@ v0.3 must prove weak packages are caught, not only that good packages pass.
 - Every new rule needs at least one good-path test and one failure-path test.
 - Do not make the gate overly flattering.
 - Creator QA should be stricter than a normal writing assistant.
+- Adapter wrappers must stay local-only.
+- Adapter wrappers must not mutate checked input files.
+- Every adapter change must include a smoke test in `scripts/verify.sh`.
 
 ## Verification
 
