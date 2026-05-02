@@ -33,4 +33,4 @@ Comment with your camera format, and watch the next Resolve tutorial on CST node
 
 # Notes
 Sources / manual verification:
-- Resolve version and color-management behavior should be checked manually before publishing.
+- Project Settings and Color Management wording checked manually before publishing.

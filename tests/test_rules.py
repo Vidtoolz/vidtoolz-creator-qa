@@ -1,7 +1,23 @@
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
+from pathlib import Path
 
+from creator_qa.cli import main
 from creator_qa.models import Package
+from creator_qa.parser import parse_markdown
 from creator_qa.rules import check_factual_risk, check_resolve_terms, run_checks
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def fixture_result(name: str, profile: str | None = "resolve_tutorial"):
+    package = parse_markdown(ROOT / "examples" / "failures" / name)
+    return run_checks(package, profile)
+
+
+def finding_ids(result) -> set[str]:
+    return {finding.id for check in result.checks for finding in check.findings}
 
 
 class RulesTests(unittest.TestCase):
@@ -77,6 +93,7 @@ Comment with your format.
 
         for key in [
             "overall_result",
+            "profile",
             "total_score",
             "max_score",
             "category_scores",
@@ -117,6 +134,82 @@ Comment with your format.
         self.assertIn("script.no_demo_or_proof", ids)
         self.assertIn("factual.risky_claim", ids)
         self.assertIn("resolve.suspicious_term", ids)
+
+    def test_bad_title_fixture_produces_title_finding(self) -> None:
+        result = fixture_result("bad-title-sample.md")
+
+        self.assertIn("title.vague", finding_ids(result))
+        self.assertIn(result.status, {"FAIL", "NEEDS WORK"})
+
+    def test_thumbnail_mismatch_fixture_produces_mismatch_finding(self) -> None:
+        result = fixture_result("thumbnail-mismatch-sample.md")
+
+        self.assertIn("thumbnail.promise_mismatch", finding_ids(result))
+        self.assertEqual(result.status, "FAIL")
+
+    def test_missing_payoff_fixture_fails_or_needs_work(self) -> None:
+        result = fixture_result("missing-viewer-payoff-sample.md")
+
+        self.assertIn("payoff.missing", finding_ids(result))
+        self.assertIn(result.status, {"FAIL", "NEEDS WORK"})
+
+    def test_weak_script_structure_fixture_is_caught(self) -> None:
+        result = fixture_result("weak-script-structure-sample.md")
+        ids = finding_ids(result)
+
+        self.assertIn("script.too_thin", ids)
+        self.assertIn("script.no_steps", ids)
+        self.assertEqual(result.status, "FAIL")
+
+    def test_risky_resolve_claims_fixture_lists_claims(self) -> None:
+        result = fixture_result("resolve-risky-claims-sample.md")
+
+        self.assertIn("factual.risky_claim", finding_ids(result))
+        self.assertTrue(result.risky_claims)
+        self.assertEqual(result.status, "FAIL")
+
+    def test_suspicious_resolve_terms_fixture_lists_terms(self) -> None:
+        result = fixture_result("suspicious-resolve-terms-sample.md")
+
+        self.assertIn("resolve.suspicious_term", finding_ids(result))
+        self.assertTrue(result.suspicious_terms)
+        self.assertEqual(result.status, "FAIL")
+
+    def test_resolve_tutorial_profile_works(self) -> None:
+        output = StringIO()
+        input_path = ROOT / "examples" / "failures" / "bad-title-sample.md"
+
+        with redirect_stdout(output):
+            exit_code = main(["check", str(input_path), "--profile", "resolve_tutorial", "--json"])
+
+        self.assertEqual(exit_code, 1)
+        self.assertIn('"profile": "resolve_tutorial"', output.getvalue())
+
+        result = fixture_result("bad-title-sample.md", "resolve_tutorial")
+        self.assertEqual(result.profile, "resolve_tutorial")
+        self.assertIn("Expected package structure", [check.name for check in result.checks])
+
+    def test_default_profile_still_works(self) -> None:
+        package = parse_markdown(ROOT / "examples" / "resolve-tutorial-sample.md")
+        result = run_checks(package)
+
+        self.assertEqual(result.profile, "resolve_tutorial")
+        self.assertGreater(result.total_score, 0)
+
+    def test_profile_required_section_failure_is_caught(self) -> None:
+        package = Package(
+            path="sample.md",
+            sections={
+                "title": "Fix DaVinci Resolve Exports Fast",
+                "thumbnail": "Fix Exports",
+                "hook": "By the end, you will know what to check.",
+            },
+        )
+
+        result = run_checks(package, "resolve_tutorial")
+
+        self.assertIn("structure.missing_script", finding_ids(result))
+        self.assertEqual(result.status, "FAIL")
 
 
 if __name__ == "__main__":

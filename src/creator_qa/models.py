@@ -62,6 +62,7 @@ class GateResult:
     """Overall packaging gate result."""
 
     package_title: str
+    profile: str
     input_sections_detected: list[str]
     created_at: str
     status: str
@@ -77,6 +78,7 @@ class GateResult:
     def to_dict(self) -> dict[str, Any]:
         return {
             "overall_result": self.status,
+            "profile": self.profile,
             "total_score": self.total_score,
             "max_score": self.max_score,
             "category_scores": {check.name: check.score for check in self.checks},

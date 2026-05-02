@@ -13,6 +13,7 @@ def render_terminal(result: GateResult) -> str:
     lines = [
         "Vidtoolz Creator QA Packaging Gate",
         f"Overall: {result.status}",
+        f"Profile: {result.profile}",
         f"Score: {result.total_score}/{result.max_score}",
         "",
         "Category scores:",
@@ -44,6 +45,7 @@ def render_markdown(result: GateResult) -> str:
         "",
         f"**Checked package:** {result.package_title}",
         f"**Overall result:** {result.status}",
+        f"**Profile:** {result.profile}",
         f"**Score:** {result.total_score}/{result.max_score}",
         "",
         "## Category Scores",
@@ -91,6 +93,7 @@ def render_hermes_report(result: GateResult) -> str:
         "",
         f"- Checked package title: {result.package_title}",
         f"- Overall result: {result.status}",
+        f"- Profile: {result.profile}",
         f"- Total score: {result.total_score}/{result.max_score}",
         f"- Failed categories: {', '.join(failed) if failed else 'None'}",
         "",
@@ -122,10 +125,11 @@ def render_linear_report(result: GateResult) -> str:
     failed = failed_categories(result)
     lines = [
         "## Summary",
-        f"Creator QA checked `{result.package_title}` and returned **{result.status}** with score **{result.total_score}/{result.max_score}**.",
+        f"Creator QA checked `{result.package_title}` with profile `{result.profile}` and returned **{result.status}** with score **{result.total_score}/{result.max_score}**.",
         "",
         "## Result",
         f"- Overall result: {result.status}",
+        f"- Profile: {result.profile}",
         f"- Score: {result.total_score}/{result.max_score}",
         f"- Failed categories: {', '.join(failed) if failed else 'None'}",
         "",

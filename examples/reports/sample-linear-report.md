@@ -1,20 +1,21 @@
 ## Summary
-Creator QA checked `Fix Flat DaVinci Resolve Exports with Color Management` and returned **PASS** with score **29/30**.
+Creator QA checked `Fix Flat DaVinci Resolve Exports with Color Management` with profile `resolve_tutorial` and returned **PASS** with score **35/35**.
 
 ## Result
 - Overall result: PASS
-- Score: 29/30
+- Profile: resolve_tutorial
+- Score: 35/35
 - Failed categories: None
 
 ## Failed Checks
 - None
 
 ## Action Checklist
-- [ ] Review warning in Factual-claim risk.
+- [ ] No QA fixes required.
 
 ## QA Evidence
-- Created at: 2026-05-02T00:00:00Z
+- Created at: 2026-05-02T03:40:17Z
 - Sections detected: hook, notes, script, thumbnail, title
-- Risky factual claims: 1
+- Risky factual claims: 0
 - Suspicious Resolve terms: 0
-- Finding IDs: factual.risky_claim
+- Finding IDs: None

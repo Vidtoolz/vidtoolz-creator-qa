@@ -1,34 +1,119 @@
 {
-  "overall_result": "PASS",
-  "total_score": 29,
-  "max_score": 30,
   "category_scores": {
-    "YouTube title clarity": 5,
+    "Expected package structure": 5,
+    "Factual-claim risk": 5,
+    "Resolve terminology accuracy": 5,
+    "Script structure": 5,
     "Thumbnail / title promise alignment": 5,
     "Viewer payoff": 5,
-    "Script structure": 5,
-    "Factual-claim risk": 4,
-    "Resolve terminology accuracy": 5
+    "YouTube title clarity": 5
   },
-  "findings": [
+  "checks": [
     {
-      "id": "factual.risky_claim",
-      "severity": "warning",
-      "category": "Factual-claim risk",
-      "message": "Risky factual claims detected; source notes are present.",
-      "suggestion": "Confirm the source notes are current before publishing."
+      "details": {
+        "present": [
+          "hook",
+          "script",
+          "thumbnail",
+          "title"
+        ],
+        "profile": "resolve_tutorial",
+        "required_sections": [
+          "title",
+          "thumbnail",
+          "hook",
+          "script"
+        ]
+      },
+      "failed": [],
+      "findings": [],
+      "name": "Expected package structure",
+      "score": 5,
+      "warnings": []
+    },
+    {
+      "details": {},
+      "failed": [],
+      "findings": [],
+      "name": "YouTube title clarity",
+      "score": 5,
+      "warnings": []
+    },
+    {
+      "details": {
+        "shared_terms": [
+          "exports",
+          "fix",
+          "flat"
+        ]
+      },
+      "failed": [],
+      "findings": [],
+      "name": "Thumbnail / title promise alignment",
+      "score": 5,
+      "warnings": []
+    },
+    {
+      "details": {},
+      "failed": [],
+      "findings": [],
+      "name": "Viewer payoff",
+      "score": 5,
+      "warnings": []
+    },
+    {
+      "details": {
+        "expected": [
+          "hook",
+          "problem/context",
+          "promised outcome",
+          "steps or sections",
+          "demonstration/proof",
+          "recap or takeaway",
+          "call to action"
+        ],
+        "present": [
+          "hook",
+          "problem/context",
+          "promised outcome",
+          "steps or sections",
+          "demonstration/proof",
+          "recap or takeaway",
+          "call to action"
+        ],
+        "word_count": 189
+      },
+      "failed": [],
+      "findings": [],
+      "name": "Script structure",
+      "score": 5,
+      "warnings": []
+    },
+    {
+      "details": {
+        "needs_source_manual_verification": []
+      },
+      "failed": [],
+      "findings": [],
+      "name": "Factual-claim risk",
+      "score": 5,
+      "warnings": []
+    },
+    {
+      "details": {
+        "profile": "resolve_tutorial",
+        "suspicious_terms": []
+      },
+      "failed": [],
+      "findings": [],
+      "name": "Resolve terminology accuracy",
+      "score": 5,
+      "warnings": []
     }
   ],
-  "warnings": [
-    "Risky factual claims detected; source notes are present."
-  ],
-  "risky_claims": [
-    "Resolve version and color-management behavior should be checked manually before publishing."
-  ],
-  "suspicious_terms": [],
-  "top_fixes": [
-    "Review warning in Factual-claim risk."
-  ],
+  "created_at": "2026-05-02T03:40:17Z",
+  "failed_checks": [],
+  "findings": [],
   "input_sections_detected": [
     "hook",
     "notes",
@@ -36,6 +121,16 @@
     "thumbnail",
     "title"
   ],
-  "created_at": "2026-05-02T00:00:00Z",
-  "package_title": "Fix Flat DaVinci Resolve Exports with Color Management"
+  "max_score": 35,
+  "overall_result": "PASS",
+  "package_title": "Fix Flat DaVinci Resolve Exports with Color Management",
+  "profile": "resolve_tutorial",
+  "risky_claims": [],
+  "risky_factual_claims": [],
+  "suspicious_resolve_terms": [],
+  "suspicious_terms": [],
+  "top_3_recommended_fixes": [],
+  "top_fixes": [],
+  "total_score": 35,
+  "warnings": []
 }

@@ -2,7 +2,7 @@
 
 Vidtoolz Creator QA is a local Python CLI for checking VIDTOOLZ YouTube packaging and scripts before publishing.
 
-v0.2 answers one question:
+v0.3 answers one question:
 
 > Run packaging gate on this title/thumbnail/script and tell me what fails.
 
@@ -19,6 +19,8 @@ It parses a Markdown package with sections like `# Title`, `# Thumbnail`, `# Hoo
 - Emits stable rule IDs for machine-readable findings.
 - Flags risky claims that need source notes or manual verification.
 - Flags suspicious Resolve terms using an editable local lexicon in `data/resolve_terms.json`.
+- Supports QA profiles for Resolve tutorials, Shorts, AI video breakdowns, Kit newsletters, and product affiliate pages.
+- Includes intentionally weak fixtures to prove failure paths.
 
 ## What It Does Not Do
 
@@ -47,6 +49,7 @@ PYTHONPATH=src python -m creator_qa.cli check examples/resolve-tutorial-sample.m
 
 ```bash
 creator-qa check INPUT.md
+creator-qa check INPUT.md --profile resolve_tutorial
 creator-qa check INPUT.md --json
 creator-qa check INPUT.md --report report.md
 creator-qa check INPUT.md --hermes-report
@@ -63,6 +66,12 @@ JSON output:
 
 ```bash
 creator-qa check examples/resolve-tutorial-sample.md --json
+```
+
+Profile-specific check:
+
+```bash
+creator-qa check examples/resolve-tutorial-sample.md --profile resolve_tutorial
 ```
 
 Markdown report output:
@@ -88,29 +97,63 @@ creator-qa check examples/resolve-tutorial-sample.md --linear-report
 ```text
 Vidtoolz Creator QA Packaging Gate
 Overall: PASS
-Score: 29/30
+Profile: resolve_tutorial
+Score: 35/35
 
 Category scores:
+- Expected package structure: 5/5
 - YouTube title clarity: 5/5
 - Thumbnail / title promise alignment: 5/5
 - Viewer payoff: 5/5
 - Script structure: 5/5
-- Factual-claim risk: 4/5
+- Factual-claim risk: 5/5
 - Resolve terminology accuracy: 5/5
-
-Warnings:
-- Risky factual claims detected; source notes are present.
-
-Risky factual claims needing source / manual verification:
-- Resolve version and color-management behavior should be checked manually before publishing.
-
-Top 3 fixes:
-1. Review warning in Factual-claim risk.
 ```
 
 Exact scores may change as local rules are edited.
 
 Example outputs are available in `examples/reports/`.
+
+## Profiles
+
+If `--profile` is omitted, Creator QA uses `resolve_tutorial`.
+
+Supported profiles:
+
+- `resolve_tutorial`
+- `shorts`
+- `ai_video_breakdown`
+- `kit_newsletter`
+- `product_affiliate_page`
+
+Profiles tune expected sections, title length tolerance, thumbnail text tolerance, required script beats, minimum script depth, factual-risk sensitivity, and terminology checking. See `docs/profiles.md`.
+
+## Gate Results
+
+- `PASS`: no fail-severity findings and a strong enough score for the selected profile.
+- `NEEDS WORK`: warnings, non-critical fail findings, partial structure problems, or a score below the pass threshold exist.
+- `FAIL`: a critical publishing problem exists.
+
+Critical publishing problems include missing title, missing viewer payoff, no usable script, title/thumbnail promise conflict, major Resolve terminology suspicion in a Resolve tutorial, and risky factual claims with no source notes.
+
+## Failure Examples
+
+Intentionally weak fixtures live in `examples/failures/`:
+
+- `bad-title-sample.md`
+- `thumbnail-mismatch-sample.md`
+- `missing-viewer-payoff-sample.md`
+- `weak-script-structure-sample.md`
+- `resolve-risky-claims-sample.md`
+- `suspicious-resolve-terms-sample.md`
+
+Run them when changing rules to confirm the gate is not overly flattering:
+
+```bash
+creator-qa check examples/failures/thumbnail-mismatch-sample.md --profile resolve_tutorial
+```
+
+See `docs/failure-examples.md`.
 
 ## Markdown Input Format
 
@@ -153,6 +196,7 @@ The script runs Python syntax checks, unit tests, and CLI smoke tests against th
 `--json` includes:
 
 - `overall_result`
+- `profile`
 - `total_score`
 - `max_score`
 - `category_scores`

@@ -2,14 +2,15 @@
 
 - Checked package title: Fix Flat DaVinci Resolve Exports with Color Management
 - Overall result: PASS
-- Total score: 29/30
+- Profile: resolve_tutorial
+- Total score: 35/35
 - Failed categories: None
 
 ## Top 3 Fixes
-1. Review warning in Factual-claim risk.
+No fixes required.
 
 ## Risky Factual Claims
-- Resolve version and color-management behavior should be checked manually before publishing.
+- None
 
 ## Suspicious Resolve Terms
 - None

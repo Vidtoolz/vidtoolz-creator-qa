@@ -1,4 +1,4 @@
-"""Deterministic v0.1 rule checks for Creator QA."""
+"""Deterministic rule checks for Creator QA."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .models import CheckResult, Finding, GateResult, Package
+from .profiles import QAProfile, get_profile
 
 DATA_PATH = Path(__file__).resolve().parents[2] / "data" / "resolve_terms.json"
 
@@ -86,6 +87,13 @@ RISK_PATTERNS = [
     r"\bresolve\b.*\b(feature|supports|requires|added|removed)\b",
     r"\b(codec|h\.?264|h\.?265|prores|dnx|gpu|cuda|metal|performance|render speed|fps)\b",
 ]
+STRICT_RISK_PATTERNS = [
+    r"\blatest\b",
+    r"\bnew\b",
+    r"\bupdated\b",
+    r"\breleased\b",
+    r"\b\d{4}\b",
+]
 SOURCE_HINTS = ["source:", "sources:", "citation:", "verified:", "manual verification:", "needs source"]
 WORD_RE = re.compile(r"[a-zA-Z0-9']+")
 
@@ -102,7 +110,39 @@ def finding(rule_id: str, severity: str, category: str, message: str, suggestion
     return Finding(rule_id, severity, category, message, suggestion)
 
 
-def check_title(package: Package) -> CheckResult:
+def check_expected_structure(package: Package, profile: QAProfile | None = None) -> CheckResult:
+    profile = profile or get_profile()
+    category = "Expected package structure"
+    failed: list[str] = []
+    findings: list[Finding] = []
+    present = sorted(section for section in profile.required_sections if package.get(section))
+    missing = [section for section in profile.required_sections if not package.get(section)]
+
+    for section in missing:
+        message = f"Required section is missing for {profile.name}: {section}."
+        failed.append(message)
+        findings.append(
+            finding(
+                f"structure.missing_{section.replace(' ', '_')}",
+                "fail",
+                category,
+                message,
+                f"Add a # {section.title()} section for the {profile.name} profile.",
+            )
+        )
+
+    return CheckResult(
+        category,
+        score_from_issues(len(failed)),
+        failed,
+        [],
+        {"profile": profile.name, "required_sections": list(profile.required_sections), "present": present},
+        findings,
+    )
+
+
+def check_title(package: Package, profile: QAProfile | None = None) -> CheckResult:
+    profile = profile or get_profile()
     category = "YouTube title clarity"
     title = package.get("title")
     failed: list[str] = []
@@ -114,10 +154,10 @@ def check_title(package: Package) -> CheckResult:
         message = "Title section is missing."
         failed.append(message)
         findings.append(finding("title.missing", "fail", category, message, "Add a # Title section with topic and viewer benefit."))
-    if len(title) > 70:
-        message = "Title is too long for clear YouTube packaging."
+    if len(title) > profile.title_max_length:
+        message = f"Title is too long for the {profile.name} profile."
         failed.append(message)
-        findings.append(finding("title.too_long", "fail", category, message, "Shorten the title to roughly 70 characters or fewer."))
+        findings.append(finding("title.too_long", "fail", category, message, f"Shorten the title to roughly {profile.title_max_length} characters or fewer."))
     if len(title_words) < 4:
         message = "Title is too short to clearly identify topic and benefit."
         failed.append(message)
@@ -134,7 +174,7 @@ def check_title(package: Package) -> CheckResult:
         message = "Title does not state a clear viewer benefit."
         failed.append(message)
         findings.append(finding("title.no_viewer_benefit", "fail", category, message, "State what the viewer can fix, make, avoid, save, or improve."))
-    if "resolve" not in title.lower() and "davinci" not in title.lower():
+    if profile.resolve_terminology != "off" and "resolve" not in title.lower() and "davinci" not in title.lower():
         message = "Title may not identify the Resolve/video editing topic clearly."
         warnings.append(message)
         findings.append(finding("title.topic_unclear", "warning", category, message, "Include Resolve, DaVinci Resolve, or a clear editing topic when relevant."))
@@ -142,7 +182,8 @@ def check_title(package: Package) -> CheckResult:
     return CheckResult(category, score_from_issues(len(failed)), failed, warnings, findings=findings)
 
 
-def check_thumbnail_alignment(package: Package) -> CheckResult:
+def check_thumbnail_alignment(package: Package, profile: QAProfile | None = None) -> CheckResult:
+    profile = profile or get_profile()
     category = "Thumbnail / title promise alignment"
     title = package.get("title")
     thumbnail = package.get("thumbnail")
@@ -153,14 +194,18 @@ def check_thumbnail_alignment(package: Package) -> CheckResult:
     thumb_words = set(words(thumbnail)) - GENERIC_TITLE_WORDS
     overlap = title_words & thumb_words
 
-    if not thumbnail:
+    if not thumbnail and profile.thumbnail_required:
         message = "Thumbnail section is missing."
         failed.append(message)
         findings.append(finding("thumbnail.missing", "fail", category, message, "Add a # Thumbnail section with short visual promise text."))
-    if len(words(thumbnail)) > 8:
-        message = "Thumbnail text is too long."
+    elif not thumbnail:
+        message = "Thumbnail is optional for this profile, but packaging may be harder to evaluate."
+        warnings.append(message)
+        findings.append(finding("thumbnail.optional_missing", "warning", category, message, "Add thumbnail text when this package will be used for a video surface."))
+    if len(words(thumbnail)) > profile.thumbnail_max_words:
+        message = f"Thumbnail text is too long for the {profile.name} profile."
         failed.append(message)
-        findings.append(finding("thumbnail.too_much_text", "fail", category, message, "Cut thumbnail text to a short phrase, ideally under 8 words."))
+        findings.append(finding("thumbnail.too_much_text", "fail", category, message, f"Cut thumbnail text to roughly {profile.thumbnail_max_words} words or fewer."))
     if title_words and thumb_words and not overlap:
         message = "Title and thumbnail text do not share a clear promise."
         failed.append(message)
@@ -209,18 +254,26 @@ def check_viewer_payoff(package: Package) -> CheckResult:
     return CheckResult(category, score_from_issues(len(failed) * 2), failed, warnings, findings=findings)
 
 
-def check_script_structure(package: Package) -> CheckResult:
+def check_script_structure(package: Package, profile: QAProfile | None = None) -> CheckResult:
+    profile = profile or get_profile()
     category = "Script structure"
     script = "\n".join([package.get("hook"), package.get("script")]).lower()
     failed: list[str] = []
+    warnings: list[str] = []
     findings: list[Finding] = []
     present: list[str] = []
+    script_words = words(script)
 
     if not script.strip():
         message = "Hook and Script sections are missing."
         failed.append(message)
         findings.append(finding("script.missing", "fail", category, message, "Add # Hook and # Script sections before running QA."))
-    for part, patterns in STRUCTURE_PATTERNS.items():
+    elif len(script_words) < profile.min_script_words:
+        message = f"Script is too thin for the {profile.name} profile."
+        failed.append(message)
+        findings.append(finding("script.too_thin", "fail", category, message, f"Expand the script to at least {profile.min_script_words} purposeful words with clear beats."))
+    for part in profile.structure_parts:
+        patterns = STRUCTURE_PATTERNS[part]
         if any(re.search(pattern, script, re.MULTILINE | re.DOTALL) for pattern in patterns):
             present.append(part)
         else:
@@ -237,9 +290,18 @@ def check_script_structure(package: Package) -> CheckResult:
             }[part]
             findings.append(finding(rule_id, "fail", category, message, f"Add a clear {part} beat to the script."))
 
-    missing_count = len(STRUCTURE_PATTERNS) - len(present)
+    missing_count = len(profile.structure_parts) - len(present)
     score = 0 if not script.strip() else max(0, 5 - missing_count)
-    return CheckResult(category, score, failed, [], {"present": present}, findings)
+    if script.strip() and missing_count and missing_count <= 2:
+        warnings.append("Script has partial structure problems.")
+    return CheckResult(
+        category,
+        min(score, score_from_issues(1) if len(script_words) < profile.min_script_words else 5),
+        failed,
+        warnings,
+        {"present": present, "expected": list(profile.structure_parts), "word_count": len(script_words)},
+        findings,
+    )
 
 
 def has_source_notes(package: Package) -> bool:
@@ -247,7 +309,8 @@ def has_source_notes(package: Package) -> bool:
     return any(hint in notes for hint in SOURCE_HINTS)
 
 
-def find_risky_claims(text: str) -> list[str]:
+def find_risky_claims(text: str, sensitivity: str = "strict") -> list[str]:
+    patterns = RISK_PATTERNS + (STRICT_RISK_PATTERNS if sensitivity == "strict" else [])
     claims: list[str] = []
     for line in text.splitlines():
         stripped = line.strip()
@@ -255,14 +318,15 @@ def find_risky_claims(text: str) -> list[str]:
             continue
         stripped = re.sub(r"^[-*]\s+", "", stripped)
         lower = stripped.lower()
-        if any(re.search(pattern, lower) for pattern in RISK_PATTERNS):
+        if any(re.search(pattern, lower) for pattern in patterns):
             claims.append(stripped)
     return claims
 
 
-def check_factual_risk(package: Package) -> CheckResult:
+def check_factual_risk(package: Package, profile: QAProfile | None = None) -> CheckResult:
+    profile = profile or get_profile()
     category = "Factual-claim risk"
-    claims = find_risky_claims(package.combined_text)
+    claims = find_risky_claims(package.combined_text, profile.factual_risk_sensitivity)
     sourced = has_source_notes(package)
     failed: list[str] = []
     warnings: list[str] = []
@@ -290,8 +354,11 @@ def load_resolve_lexicon(path: Path = DATA_PATH) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def check_resolve_terms(package: Package) -> CheckResult:
+def check_resolve_terms(package: Package, profile: QAProfile | None = None) -> CheckResult:
+    profile = profile or get_profile()
     category = "Resolve terminology accuracy"
+    if profile.resolve_terminology == "off":
+        return CheckResult(category, 5, [], [], {"suspicious_terms": [], "profile": profile.name}, [])
     lexicon = load_resolve_lexicon()
     suspicious_map: dict[str, str] = lexicon.get("suspicious_terms", {})  # type: ignore[assignment]
     text = package.combined_text.lower()
@@ -304,20 +371,25 @@ def check_resolve_terms(package: Package) -> CheckResult:
     findings = [
         finding(
             "resolve.suspicious_term",
-            "fail",
+            "fail" if profile.resolve_terminology == "strict" else "warning",
             category,
             f"Suspicious Resolve term: {item}",
             "Replace the suspicious wording with the suggested Resolve terminology.",
         )
         for item in suspicious
     ]
+    warnings: list[str] = []
+    if profile.resolve_terminology != "strict":
+        warnings = failed
+        failed = []
     score = score_from_issues(len(failed))
-    return CheckResult(category, score, failed, [], {"suspicious_terms": suspicious}, findings)
+    return CheckResult(category, score, failed, warnings, {"suspicious_terms": suspicious, "profile": profile.name}, findings)
 
 
 def top_fixes(checks: list[CheckResult]) -> list[str]:
     fixes: list[str] = []
     priority = [
+        ("Expected package structure", "Add the sections required by the selected QA profile."),
         ("Viewer payoff", "Rewrite the title/hook to state what the viewer gets by the end."),
         ("Script structure", "Add missing script beats: hook, context, outcome, steps, proof, recap, and CTA."),
         ("Factual-claim risk", "Add source notes or manual verification for risky factual claims."),
@@ -338,36 +410,58 @@ def top_fixes(checks: list[CheckResult]) -> list[str]:
     return fixes[:3]
 
 
-def run_checks(package: Package) -> GateResult:
+CRITICAL_FINDING_IDS = {
+    "structure.missing_title",
+    "structure.missing_script",
+    "title.missing",
+    "payoff.missing",
+    "payoff.weak",
+    "script.missing",
+    "script.too_thin",
+    "thumbnail.promise_mismatch",
+    "factual.risky_claim",
+    "resolve.suspicious_term",
+}
+
+
+def is_critical_finding(finding_item: Finding, profile: QAProfile) -> bool:
+    if finding_item.id == "resolve.suspicious_term" and profile.resolve_terminology != "strict":
+        return False
+    return finding_item.severity == "fail" and finding_item.id in CRITICAL_FINDING_IDS
+
+
+def run_checks(package: Package, profile_name: str | None = None) -> GateResult:
+    profile = get_profile(profile_name)
     checks = [
-        check_title(package),
-        check_thumbnail_alignment(package),
+        check_expected_structure(package, profile),
+        check_title(package, profile),
+        check_thumbnail_alignment(package, profile),
         check_viewer_payoff(package),
-        check_script_structure(package),
-        check_factual_risk(package),
-        check_resolve_terms(package),
+        check_script_structure(package, profile),
+        check_factual_risk(package, profile),
+        check_resolve_terms(package, profile),
     ]
     total_score = sum(check.score for check in checks)
     max_score = len(checks) * 5
     failed_checks = [failure for check in checks for failure in check.failed]
     warnings = [warning for check in checks for warning in check.warnings]
-    risky_claims = checks[4].details.get("needs_source_manual_verification", [])
-    suspicious_terms = checks[5].details.get("suspicious_terms", [])
+    risky_claims = checks[5].details.get("needs_source_manual_verification", [])
+    suspicious_terms = checks[6].details.get("suspicious_terms", [])
+    findings = [finding_item for check in checks for finding_item in check.findings]
+    fail_findings = [finding_item for finding_item in findings if finding_item.severity == "fail"]
+    critical_findings = [finding_item for finding_item in findings if is_critical_finding(finding_item, profile)]
+    min_pass_score = int(max_score * profile.min_pass_ratio)
 
-    hard_fail = (
-        bool(checks[2].failed)
-        or checks[3].score <= 1
-        or bool(checks[4].failed)
-    )
-    if hard_fail or total_score < 18:
+    if critical_findings:
         status = "FAIL"
-    elif failed_checks or total_score < 24:
+    elif fail_findings or warnings or total_score < min_pass_score:
         status = "NEEDS WORK"
     else:
         status = "PASS"
 
     return GateResult(
         package_title=package.get("title") or "(untitled package)",
+        profile=profile.name,
         input_sections_detected=sorted(package.sections),
         created_at=datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
         status=status,
