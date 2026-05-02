@@ -231,7 +231,15 @@ def check_thumbnail_alignment(package: Package, profile: QAProfile | None = None
 
 def check_viewer_payoff(package: Package) -> CheckResult:
     category = "Viewer payoff"
-    combined = "\n".join([package.get("title"), package.get("thumbnail"), package.get("hook"), package.get("script")])
+    combined = "\n".join(
+        [
+            package.get("title"),
+            package.get("thumbnail"),
+            package.get("hook"),
+            package.get("viewer payoff"),
+            package.get("script"),
+        ]
+    )
     lower = combined.lower()
     failed: list[str] = []
     warnings: list[str] = []

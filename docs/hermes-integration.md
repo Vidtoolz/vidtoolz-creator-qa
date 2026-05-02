@@ -42,9 +42,15 @@ For automation checks, use:
 ./scripts/hermes-creator-qa.sh path/to/package.md --json
 ```
 
+When Hermes receives an Episode Factory JSON export, call Creator QA directly:
+
+```bash
+creator-qa check-episode-json path/to/episode.json --hermes-report
+```
+
 ## Episode Factory Path
 
-Episode Factory can later export an episode package into `templates/creator-qa-package.md` shape, write it as Markdown, and pass that file to the wrapper. JSON output can be stored as QA evidence, while the Hermes report can be pasted into memory or review notes.
+Episode Factory can export an episode package into `templates/creator-qa-package.md` shape, write it as Markdown, and pass that file to the wrapper. It can also export JSON and pass that file to `creator-qa check-episode-json`. JSON output can be stored as QA evidence, while the Hermes report can be pasted into memory or review notes.
 
 ## Manual in v0.4
 

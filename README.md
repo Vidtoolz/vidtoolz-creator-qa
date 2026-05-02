@@ -2,11 +2,11 @@
 
 Vidtoolz Creator QA is a local Python CLI for checking VIDTOOLZ YouTube packaging and scripts before publishing.
 
-v0.4 answers one question:
+v0.5 answers one question:
 
 > Run packaging gate on this title/thumbnail/script and tell me what fails.
 
-It parses a Markdown package with sections like `# Title`, `# Thumbnail`, `# Hook`, `# Script`, and `# Notes`, then runs deterministic checks for packaging clarity, promise alignment, viewer payoff, script structure, factual-claim risk, and DaVinci Resolve terminology.
+It parses a Markdown package or Episode Factory JSON export, then runs deterministic checks for packaging clarity, promise alignment, viewer payoff, script structure, factual-claim risk, and DaVinci Resolve terminology.
 
 ## What It Does
 
@@ -22,6 +22,7 @@ It parses a Markdown package with sections like `# Title`, `# Thumbnail`, `# Hoo
 - Supports QA profiles for Resolve tutorials, Shorts, AI video breakdowns, Kit newsletters, and product affiliate pages.
 - Includes intentionally weak fixtures to prove failure paths.
 - Provides a local Hermes/Codex adapter wrapper for reusable QA checks.
+- Reads Episode Factory JSON exports and renders them to standard Creator QA Markdown packages.
 
 ## What It Does Not Do
 
@@ -55,9 +56,11 @@ creator-qa check INPUT.md --json
 creator-qa check INPUT.md --report report.md
 creator-qa check INPUT.md --hermes-report
 creator-qa check INPUT.md --linear-report
+creator-qa check-episode-json INPUT.json
+creator-qa render-package INPUT.json --output OUTPUT.md
 ```
 
-Normal terminal check:
+Check a Markdown package:
 
 ```bash
 creator-qa check examples/resolve-tutorial-sample.md
@@ -91,6 +94,20 @@ Linear issue/comment output:
 
 ```bash
 creator-qa check examples/resolve-tutorial-sample.md --linear-report
+```
+
+Check an Episode Factory JSON export:
+
+```bash
+creator-qa check-episode-json examples/episode-factory/resolve-episode-good.json
+creator-qa check-episode-json examples/episode-factory/resolve-episode-weak.json --hermes-report
+creator-qa check-episode-json examples/episode-factory/resolve-episode-weak.json --linear-report
+```
+
+Render Episode Factory JSON to a standard Creator QA Markdown package:
+
+```bash
+creator-qa render-package examples/episode-factory/resolve-episode-good.json --output /tmp/creator-qa-package.md
 ```
 
 ## Hermes / Codex Adapter Usage
@@ -180,6 +197,12 @@ creator-qa check examples/failures/thumbnail-mismatch-sample.md --profile resolv
 
 See `docs/failure-examples.md`.
 
+## Episode Factory Bridge
+
+Episode Factory can export JSON with fields such as `title`, `thumbnailText`, `thumbnailConcept`, `hook`, `promise`, `viewerPayoff`, `scriptOutline`, `script`, `notes`, `factualClaims`, `sourceNotes`, `status`, `packagingGate`, `checklist`, `shortsIdeas`, and `nextAction`.
+
+Creator QA maps those fields into the existing package model and tolerates missing optional fields. See `docs/episode-factory-bridge.md`.
+
 ## Markdown Input Format
 
 ```markdown
@@ -243,6 +266,6 @@ Use `./scripts/hermes-creator-qa.sh INPUT.md` when the result should be pasted i
 
 ## Episode Factory Integration
 
-Vidtoolz Episode Factory can later export Markdown packages into Creator QA, run `creator-qa check episode.md --json`, and store the result as QA evidence. For task tracking, it can route `--linear-report` into Linear. For memory, it can route `--hermes-report` into Hermes.
+Vidtoolz Episode Factory can export Markdown packages into Creator QA, run `creator-qa check episode.md --json`, and store the result as QA evidence. It can also export JSON and run `creator-qa check-episode-json episode.json --json`. For task tracking, it can route `--linear-report` into Linear. For memory, it can route `--hermes-report` into Hermes.
 
 See `docs/episode-factory-integration.md` for the intended integration path.

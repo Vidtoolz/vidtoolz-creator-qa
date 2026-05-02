@@ -7,7 +7,7 @@ from pathlib import Path
 from .models import Package
 
 
-KNOWN_SECTIONS = {"title", "thumbnail", "hook", "script", "notes"}
+KNOWN_SECTIONS = {"title", "thumbnail", "hook", "viewer payoff", "script", "notes"}
 
 
 def normalize_heading(value: str) -> str:

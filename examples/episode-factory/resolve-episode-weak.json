@@ -1,0 +1,31 @@
+{
+  "title": "Ultimate Resolve Guide",
+  "thumbnailConcept": "Creator pointing at a laptop",
+  "thumbnailText": "Faster Audio Mix",
+  "hook": "I show my workflow and talk about why I like these settings.",
+  "promise": "A general walkthrough of settings.",
+  "viewerPayoff": "",
+  "scriptOutline": [
+    "Open Resolve.",
+    "Look at some settings.",
+    "Try exporting."
+  ],
+  "script": "This is always the fastest Resolve 20 render workflow. Use the render page and the color tab. It is the best setup for every upload.",
+  "notes": "",
+  "factualClaims": [
+    "Always the fastest Resolve 20 render workflow.",
+    "Best setup for every upload."
+  ],
+  "sourceNotes": [],
+  "status": "rough_draft",
+  "packagingGate": {
+    "owner": "Episode Factory",
+    "targetProfile": "resolve_tutorial"
+  },
+  "checklist": [
+    "Needs clearer viewer outcome.",
+    "Missing manual evidence."
+  ],
+  "shortsIdeas": [],
+  "nextAction": "Rewrite before publishing."
+}

@@ -13,3 +13,10 @@ if ./scripts/hermes-creator-qa.sh examples/failures/bad-title-sample.md --profil
   exit 1
 fi
 grep -q "Overall result: FAIL" /tmp/creator-qa-hermes-wrapper-fail.md
+PYTHONPATH=src python -m creator_qa.cli check-episode-json examples/episode-factory/resolve-episode-good.json >/tmp/creator-qa-episode-good.txt
+if PYTHONPATH=src python -m creator_qa.cli check-episode-json examples/episode-factory/resolve-episode-weak.json >/tmp/creator-qa-episode-weak.txt; then
+  echo "Expected weak Episode Factory fixture to return non-zero." >&2
+  exit 1
+fi
+PYTHONPATH=src python -m creator_qa.cli render-package examples/episode-factory/resolve-episode-good.json --output /tmp/creator-qa-rendered.md
+test -s /tmp/creator-qa-rendered.md

@@ -1,0 +1,37 @@
+{
+  "title": "Fix Flat DaVinci Resolve Exports with Color Management",
+  "thumbnailConcept": "Before and after export frame with scopes visible",
+  "thumbnailText": "Fix Flat Exports",
+  "hook": "Your grade looks good in the Color page, but the export looks washed out. By the end, you will know the Project Settings to check so you can get a cleaner delivery.",
+  "promise": "The viewer can identify the Color Management mismatch before exporting.",
+  "viewerPayoff": "By the end, you will know which Resolve settings to inspect so you can export cleaner footage.",
+  "scriptOutline": {
+    "hook": "## Hook\nIn this video you will fix flat Resolve exports without rebuilding the whole grade.",
+    "problemContext": "## Problem / Context\nWhen the Color page looks correct but the final file looks flat, the project color pipeline is often inconsistent.",
+    "promisedOutcome": "## Promised Outcome\nBy the end, you will know what to inspect before sending the timeline to the Deliver page.",
+    "steps": "## Steps\n1. Open Project Settings.\n2. Check Color Management.\n3. Compare a short export from the Deliver page.",
+    "proof": "## Demonstration / Proof\nShow a before and after export and point to the corrected setting.",
+    "recap": "## Recap / Takeaway\nThe takeaway is to check the project-level color pipeline before changing every node.",
+    "cta": "## Call To Action\nComment with your camera format and watch the next Resolve tutorial on CST nodes."
+  },
+  "script": "Use a real project with a timeline, a visible node tree, and a short export comparison. Keep the language focused on the viewer's result and show the setting change on screen.",
+  "notes": "Package exported by Episode Factory for Creator QA.",
+  "factualClaims": [],
+  "sourceNotes": [
+    "Project Settings and Color Management wording checked manually before publishing."
+  ],
+  "status": "draft_ready_for_qa",
+  "packagingGate": {
+    "owner": "Episode Factory",
+    "targetProfile": "resolve_tutorial"
+  },
+  "checklist": [
+    "Title names Resolve and benefit.",
+    "Thumbnail reinforces the same export promise.",
+    "Script includes proof and recap."
+  ],
+  "shortsIdeas": [
+    "Show the before/after export mismatch."
+  ],
+  "nextAction": "Run Creator QA and fix any blockers before publishing."
+}

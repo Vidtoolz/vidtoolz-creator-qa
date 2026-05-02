@@ -4,12 +4,13 @@
 
 This repository contains Vidtoolz Creator QA, a local Python CLI verifier for VIDTOOLZ YouTube packaging and scripts.
 
-The v0.4 goal is to answer:
+The v0.5 goal is to answer:
 
 > Run packaging gate on this title/thumbnail/script and tell me what fails.
 
 v0.3 must prove weak packages are caught, not only that good packages pass.
 v0.4 adds a local Hermes/Codex adapter layer without modifying Hermes internals.
+v0.5 adds an Episode Factory JSON bridge.
 
 ## Constraints
 
@@ -30,6 +31,10 @@ v0.4 adds a local Hermes/Codex adapter layer without modifying Hermes internals.
 - Adapter wrappers must stay local-only.
 - Adapter wrappers must not mutate checked input files.
 - Every adapter change must include a smoke test in `scripts/verify.sh`.
+- Do not break existing Markdown input.
+- Keep JSON adapters tolerant of missing optional fields.
+- Every Episode Factory field mapping must be documented.
+- Every new input shape needs tests.
 
 ## Verification
 
