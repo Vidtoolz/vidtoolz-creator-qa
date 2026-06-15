@@ -166,7 +166,9 @@ Comment with your format.
 
         self.assertIn("factual.risky_claim", finding_ids(result))
         self.assertTrue(result.risky_claims)
-        self.assertEqual(result.status, "FAIL")
+        # An unsourced risky claim is fixable (add a source note), so it is a
+        # NEEDS WORK, not a hard FAIL. It still blocks PASS via the fail-finding.
+        self.assertEqual(result.status, "NEEDS WORK")
 
     def test_suspicious_resolve_terms_fixture_lists_terms(self) -> None:
         result = fixture_result("suspicious-resolve-terms-sample.md")
@@ -195,6 +197,18 @@ Comment with your format.
 
         self.assertEqual(result.profile, "resolve_tutorial")
         self.assertGreater(result.total_score, 0)
+
+    def test_realistic_good_package_reaches_pass(self) -> None:
+        # Regression guard for the gating fix: a genuinely well-structured,
+        # sourced, jargon-using Resolve package must be able to reach PASS.
+        # Before the fix, ordinary tutorial vocabulary ("codec", "fps", a year,
+        # "best/first") tripped factual-risk as a hard FAIL and any advisory
+        # warning blocked PASS, making PASS effectively unreachable.
+        package = parse_markdown(ROOT / "examples" / "resolve-tutorial-sample.md")
+        result = run_checks(package, "resolve_tutorial")
+
+        self.assertEqual(result.status, "PASS")
+        self.assertEqual(result.risky_claims, [])
 
     def test_profile_required_section_failure_is_caught(self) -> None:
         package = Package(

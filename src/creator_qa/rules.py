@@ -70,29 +70,32 @@ STRUCTURE_PATTERNS = {
     "recap or takeaway": [r"\brecap\b", r"\btakeaway\b", r"\bremember\b", r"\bin short\b", r"\bsummary\b"],
     "call to action": [r"\bsubscribe\b", r"\bcomment\b", r"\blike\b", r"\bdownload\b", r"\bgrab\b", r"\bwatch next\b"],
 }
+# Claim-shaped patterns only. We flag things that can be factually wrong and
+# embarrassing (versions, prices, compatibility/support assertions, absolute
+# claims, concrete performance specs) — NOT ordinary tutorial vocabulary.
+# Bare superlatives ("best", "fastest", "first", "only") and topic words
+# ("codec", "prores", "gpu", "fps") were removed: they are packaging/quality
+# concerns handled elsewhere, not factual risks, and they made PASS unreachable.
 RISK_PATTERNS = [
     r"\balways\b",
     r"\bnever\b",
-    r"\bbest\b",
-    r"\bfastest\b",
-    r"\bfirst\b",
-    r"\bonly\b",
-    r"\bv?\d+\.\d+(?:\.\d+)?\b",
-    r"\bversion\b",
-    r"\$\s?\d+(?:\.\d{2})?\b",
+    r"\bguarantee(?:d|s)?\b",
+    r"\bv?\d+\.\d+(?:\.\d+)?\b",                       # version numbers: 18.6, v2.0.1
+    r"\bversion\s+\d+\b",                              # "version 18"
+    r"\$\s?\d+(?:\.\d{2})?\b",                         # prices
     r"\b\d+(?:\.\d+)?\s?(?:usd|eur|gbp|dollars|euros)\b",
     r"\bcompatible with\b",
     r"\bworks with\b",
     r"\bsupports\b",
+    r"\brequires\b",
     r"\bresolve\b.*\b(feature|supports|requires|added|removed)\b",
-    r"\b(codec|h\.?264|h\.?265|prores|dnx|gpu|cuda|metal|performance|render speed|fps)\b",
+    r"\b\d+(?:\.\d+)?\s?x\s+(?:faster|slower|smaller|bigger)\b",  # "2x faster"
+    r"\b\d+\s?(?:fps|mbps|gb|tb)\b",                   # concrete specs: 60fps, 50mbps
 ]
 STRICT_RISK_PATTERNS = [
-    r"\blatest\b",
-    r"\bnew\b",
-    r"\bupdated\b",
-    r"\breleased\b",
-    r"\b\d{4}\b",
+    r"\b(?:19|20)\d{2}\b",                             # explicit years (not 1080/4000/720)
+    r"\bnewly (?:added|released|introduced)\b",
+    r"\b(?:released|introduced|added)\s+in\s+(?:19|20)\d{2}\b",
 ]
 SOURCE_HINTS = ["source:", "sources:", "citation:", "verified:", "manual verification:", "needs source"]
 WORD_RE = re.compile(r"[a-zA-Z0-9']+")
@@ -418,6 +421,11 @@ def top_fixes(checks: list[CheckResult]) -> list[str]:
     return fixes[:3]
 
 
+# A critical finding forces a hard FAIL. An unsourced risky factual claim is a
+# real problem but should be a NEEDS WORK (fail-severity, non-critical), not a
+# hard FAIL — it is fixable by adding a source note, and treating it as critical
+# made realistic packages un-passable. So `factual.risky_claim` is intentionally
+# NOT in this set; it still blocks PASS via the fail-finding check below.
 CRITICAL_FINDING_IDS = {
     "structure.missing_title",
     "structure.missing_script",
@@ -427,7 +435,6 @@ CRITICAL_FINDING_IDS = {
     "script.missing",
     "script.too_thin",
     "thumbnail.promise_mismatch",
-    "factual.risky_claim",
     "resolve.suspicious_term",
 }
 
@@ -460,9 +467,12 @@ def run_checks(package: Package, profile_name: str | None = None) -> GateResult:
     critical_findings = [finding_item for finding_item in findings if is_critical_finding(finding_item, profile)]
     min_pass_score = int(max_score * profile.min_pass_ratio)
 
+    # Warnings are advisory and must NOT block PASS (they still surface in the
+    # report for the human). Only critical findings (FAIL), any fail-severity
+    # finding, or an under-threshold score gate the result.
     if critical_findings:
         status = "FAIL"
-    elif fail_findings or warnings or total_score < min_pass_score:
+    elif fail_findings or total_score < min_pass_score:
         status = "NEEDS WORK"
     else:
         status = "PASS"
